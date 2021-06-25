@@ -11,8 +11,11 @@ Features Covering
     --Email
     --Phone Verification
 
-
 2.Firebase Storage
 
     --Upload Image(*jpg)
     --Upload Pdf(*pdf)
+
+3.React-Redux state management
+
+4.Persistance Storage(Asynchronous)
