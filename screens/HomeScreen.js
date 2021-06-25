@@ -13,27 +13,11 @@ import * as ImagePicker from "expo-image-picker";
 
 const tempDir = FileSystem.documentDirectory + "zipFiled";
 
-// const  uploadRef=()=> {
-//   // [START storage_upload_ref]
-//   // Create a root reference
-//   var storageRef = firebase.storage().ref();
-
-//   // Create a reference to 'mountains.jpg'
-//   var mountainsRef = storageRef.child("mountains.jpg");
-
-//   // Create a reference to 'images/mountains.jpg'
-//   var mountainImagesRef = storageRef.child("images/mountains.jpg");
-
-//   // While the file names are the same, the references point to different files
-//   mountainsRef.name === mountainImagesRef.name; // true
-//   mountainsRef.fullPath === mountainImagesRef.fullPath; // false
-//   // [END storage_upload_ref]
-// }
-
 const HomeScreen = (props) => {
   const [user, setUser] = React.useState(null);
   const [document, setDocument] = React.useState(null);
   const [image, setImage] = React.useState(null);
+  const [uploading, setUploading] = React.useState(false);
   const handleSignOut = () => {
     props.logout();
     props.navigation.navigate("Login");
@@ -41,81 +25,141 @@ const HomeScreen = (props) => {
 
   const ensureDirExists = async () => {
     const dirInfo = await FileSystem.getInfoAsync(tempDir);
-    console.log(tempDir);
     // console.log(dirInfo);
     if (!dirInfo.exists) {
       console.log("Gif directory doesn't exist, creating...");
       await FileSystem.makeDirectoryAsync(tempDir, { intermediates: true });
     }
     let res = await FileSystem.readDirectoryAsync(tempDir);
-    console.log(res[1]);
   };
 
-  const makeZips = async () => {
-    // try {
-    //   await ensureDirExists();
-    //   await FileSystem.copyAsync({
-    //     from: image.uri,
-    //     to: tempDir + `/${image.name}`,
-    //   });
-    //   // await FileSystem.copyAsync({ from: document.uri, to: tempDir });
-    //   // await FileSystem.copyAsync({ from: image.uri, to: tempDir });
-    // } catch (error) {
-    //   console.log(error);
-    // }
-    const data = await db.collection("userDocs").doc("uiid").get();
-    console.log(data);
-  };
+  /// zip (dev-mode) ///
+
+  // const makeZips = async () => {
+  //   try {
+  //     // await FileSystem.copyAsync({
+  //     //   from: image.uri,
+  //     //   to: tempDir + "/image3.jpg",
+  //     // });
+  //     // await ensureDirExists();
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  //   // try {
+  //   //   await ensureDirExists();
+  //   //   await FileSystem.copyAsync({
+  //   //     from: image.uri,
+  //   //     to: tempDir + `/${image.name}`,
+  //   //   });
+  //   //   // await FileSystem.copyAsync({ from: document.uri, to: tempDir });
+  //   //   // await FileSystem.copyAsync({ from: image.uri, to: tempDir });
+  //   // } catch (error) {
+  //   //   console.log(error);
+  //   // }
+  //   // const data = await db.collection("userDocs").doc("uiid").get();
+  //   // console.log(data);
+  // };
 
   const sendFiles = async () => {
-    if (image) {
-      const Blob = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.onload = function () {
-          resolve(xhr.response);
-        };
-        xhr.onerror = function () {
-          reject(new TypeError("Network request failed"));
-        };
-        xhr.responseType = "blob";
-        xhr.open("GET", image.uri, true);
-        xhr.send(null);
-      });
+    setUploading(true);
 
-      const ref = firebase
-        .storage()
-        .ref()
-        .child(`userDocs/${user.uid}/image.jpg`);
+    await ensureDirExists();
+    try {
+      if (image) {
+        await FileSystem.copyAsync({
+          from: image.uri,
+          to: tempDir + "/image.jpg",
+        });
 
-      const snapshot = await ref.put(Blob, {
-        contentType: "image/*",
-      });
-    }
-    if (document) {
-      const Blob = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.onload = function () {
-          resolve(xhr.response);
-        };
-        xhr.onerror = function () {
-          reject(new TypeError("Network request failed"));
-        };
-        xhr.responseType = "blob";
-        xhr.open("GET", document.uri, true);
-        xhr.send(null);
-      });
+        const Blob = await new Promise(async (resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.onload = function () {
+            resolve(xhr.response);
+          };
+          xhr.onerror = function () {
+            reject(new TypeError("Network request failed"));
+          };
+          xhr.responseType = "blob";
+          let res = await FileSystem.readDirectoryAsync(tempDir);
+          xhr.open("GET", `${tempDir}/image.jpg`, true);
+          xhr.send(null);
+        });
 
-      const ref = firebase
-        .storage()
-        .ref()
-        .child(`userDocs/${user.uid}/doc.pdf`);
+        const ref = firebase
+          .storage()
+          .ref()
+          .child(`userDocs/${user.uid}/image.jpg`);
 
-      const snapshot = await ref.put(Blob, {
-        contentType: "application/pdf",
-      });
-    } else {
+        const snapshot = await ref.put(Blob, {
+          contentType: "image/*",
+        });
+      }
+      if (document) {
+        await FileSystem.copyAsync({
+          from: document.uri,
+          to: tempDir + "/doc.pdf",
+        });
+        const Blob = await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.onload = function () {
+            resolve(xhr.response);
+          };
+          xhr.onerror = function () {
+            reject(new TypeError("Network request failed"));
+          };
+          xhr.responseType = "blob";
+          xhr.open("GET", `${tempDir}/doc.pdf`, true);
+          xhr.send(null);
+        });
+
+        const ref = firebase
+          .storage()
+          .ref()
+          .child(`userDocs/${user.uid}/doc.pdf`);
+
+        const snapshot = await ref.put(Blob, {
+          contentType: "application/pdf",
+        });
+      }
+      alert("Uploaded");
+    } catch (error) {
       alert("Try Again!!");
     }
+    setUploading(false);
+    await FileSystem.deleteAsync(tempDir, { idempotent: true });
+
+    /// Zip Implementation (dev-mode) ///
+
+    // const targetPath = `${tempDir}/myfile.zip`;
+    // const sourcePath = `${tempDir}`;
+    // zip(sourcePath, targetPath)
+    //   .then((path) => {
+    //     console.log(`zip completed at ${path}`);
+    //     const Blob = new Promise((resolve, reject) => {
+    //       const xhr = new XMLHttpRequest();
+    //       xhr.onload = function () {
+    //         resolve(xhr.response);
+    //       };
+    //       xhr.onerror = function () {
+    //         reject(new TypeError("Network request failed"));
+    //       };
+    //       xhr.responseType = "blob";
+    //       xhr.open("GET", `${tempDir}/myfile.zip`, true);
+    //       xhr.send(null);
+    //     });
+
+    //     const ref = firebase
+    //       .storage()
+    //       .ref()
+    //       .child(`userDocs/${user.uid}/myfile.zip`);
+
+    //     const snapshot = ref.put(Blob, {
+    //       contentType: "application/zip",
+    //     });
+    //   })
+    //   .catch((error) => {
+    //     console.error(error);
+    //   });
   };
   const pickDocument = async () => {
     try {
@@ -128,7 +172,7 @@ const HomeScreen = (props) => {
             name: result.name,
             type: "text/csv",
           };
-          console.log(fileData);
+          // console.log(fileData);
           setDocument(fileData);
         }
       });
@@ -140,21 +184,8 @@ const HomeScreen = (props) => {
     try {
       const pickerResult = await ImagePicker.launchImageLibraryAsync({});
       setImage(pickerResult);
-      // let result = await DocumentPicker.getDocumentAsync({
-      //   multiple: true,
-      // }).then(async (result) => {
-      //   if (result.type !== "cancel") {
-      //     const fileData = {
-      //       uri: result.uri,
-      //       name: result.name,
-      //       type: "jpg/jpeg/png",
-      //     };
-      //     console.log(fileData);
-      //     setImage(fileData);
-      //   }
-      // });
     } catch (error) {
-      console.log(error);
+      alert(error);
     }
   };
   React.useEffect(() => {
@@ -165,9 +196,7 @@ const HomeScreen = (props) => {
     try {
       const user = await db.collection("users").doc(props.user.user.uid).get();
       setUser(user.data());
-    } catch (error) {
-      console.log(error);
-    }
+    } catch (error) {}
   };
 
   return (
@@ -200,13 +229,13 @@ const HomeScreen = (props) => {
           />
           <Button
             buttonStyle={{ margin: 20 }}
-            title="Select Image"
+            title="Select Image(.jpg)"
             onPress={pickImage}
           />
-          <Button buttonStyle={{ margin: 20 }} title="Zip" onPress={makeZips} />
+          {/* <Button buttonStyle={{ margin: 20 }} title="Zip" onPress={makeZips} /> */}
           <Button
             buttonStyle={{ margin: 20 }}
-            title="Send"
+            title={uploading ? <ActivityIndicator color="white" /> : "Upload"}
             onPress={sendFiles}
           />
 
