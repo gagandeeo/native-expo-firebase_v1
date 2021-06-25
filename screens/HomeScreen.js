@@ -66,24 +66,56 @@ const HomeScreen = (props) => {
     const data = await db.collection("userDocs").doc("uiid").get();
     console.log(data);
   };
-  const sendImage = async () => {
-    const file = await FileSystem.readAsStringAsync(image.uri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-    const ref = firebase.storage().ref().child(`userDocs/${user.uid}`);
 
-    const snapshot = await ref.putString(file, "base64");
+  const sendFiles = async () => {
+    if (image) {
+      const Blob = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = function () {
+          resolve(xhr.response);
+        };
+        xhr.onerror = function () {
+          reject(new TypeError("Network request failed"));
+        };
+        xhr.responseType = "blob";
+        xhr.open("GET", image.uri, true);
+        xhr.send(null);
+      });
 
-    const remoteURL = await snapshot.ref.getDownloadURL();
-    console.log(remoteURL);
-    // [START storage_upload_blob]
-    // 'file' comes from the Blob or File API
-    // ref.put(document).then((snapshot) => {
-    //   console.log("Uploaded a blob or file!");
-    // });
-    // db.collection("userDocs").doc("uiid").set({
-    //   file: file,
-    // });
+      const ref = firebase
+        .storage()
+        .ref()
+        .child(`userDocs/${user.uid}/image.jpg`);
+
+      const snapshot = await ref.put(Blob, {
+        contentType: "image/*",
+      });
+    }
+    if (document) {
+      const Blob = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = function () {
+          resolve(xhr.response);
+        };
+        xhr.onerror = function () {
+          reject(new TypeError("Network request failed"));
+        };
+        xhr.responseType = "blob";
+        xhr.open("GET", document.uri, true);
+        xhr.send(null);
+      });
+
+      const ref = firebase
+        .storage()
+        .ref()
+        .child(`userDocs/${user.uid}/doc.pdf`);
+
+      const snapshot = await ref.put(Blob, {
+        contentType: "application/pdf",
+      });
+    } else {
+      alert("Try Again!!");
+    }
   };
   const pickDocument = async () => {
     try {
@@ -106,10 +138,7 @@ const HomeScreen = (props) => {
   };
   const pickImage = async () => {
     try {
-      const pickerResult = await ImagePicker.launchImageLibraryAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-      });
+      const pickerResult = await ImagePicker.launchImageLibraryAsync({});
       setImage(pickerResult);
       // let result = await DocumentPicker.getDocumentAsync({
       //   multiple: true,
@@ -178,7 +207,7 @@ const HomeScreen = (props) => {
           <Button
             buttonStyle={{ margin: 20 }}
             title="Send"
-            onPress={sendImage}
+            onPress={sendFiles}
           />
 
           <Button title="Logout" onPress={handleSignOut} />
