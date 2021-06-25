@@ -47,7 +47,7 @@ export const getUser = (uid) => {
       console.log("uid--->", uid);
       const user = await db.collection("users").doc(uid).get();
 
-      // console.log(user.data());
+      console.log(user.data());
       dispatch({ type: LOGIN, payload: user.data() });
     } catch (e) {
       alert(e);
@@ -88,6 +88,7 @@ export const signup = (data, navigation) => {
 
         db.collection("users").doc(response.user.uid).set(user);
         // dispatch(updateUid(response.user.uid));
+
         dispatch({ type: SIGNUP, payload: user });
         navigation.navigate("MobileAuth");
       }

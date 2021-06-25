@@ -15,6 +15,7 @@ import { ActivityIndicator } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 
 const SignUp = (props) => {
+  const [name, setName] = React.useState("");
   const [password, setPassword] = React.useState("");
 
   const signupWithFacebook = () => {

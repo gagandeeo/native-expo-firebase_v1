@@ -9,6 +9,7 @@ import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
 import firebase from "firebase";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
 
 const tempDir = FileSystem.documentDirectory + "zipFiled";
 
@@ -71,7 +72,7 @@ const HomeScreen = (props) => {
     });
     const ref = firebase.storage().ref().child(`userDocs/${user.uid}`);
 
-    const snapshot = await ref.putString(file.split(",")[1], "base64");
+    const snapshot = await ref.putString(file, "base64");
 
     const remoteURL = await snapshot.ref.getDownloadURL();
     console.log(remoteURL);
@@ -105,19 +106,24 @@ const HomeScreen = (props) => {
   };
   const pickImage = async () => {
     try {
-      let result = await DocumentPicker.getDocumentAsync({
-        multiple: true,
-      }).then(async (result) => {
-        if (result.type !== "cancel") {
-          const fileData = {
-            uri: result.uri,
-            name: result.name,
-            type: "jpg/jpeg/png",
-          };
-          console.log(fileData);
-          setImage(fileData);
-        }
+      const pickerResult = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
       });
+      setImage(pickerResult);
+      // let result = await DocumentPicker.getDocumentAsync({
+      //   multiple: true,
+      // }).then(async (result) => {
+      //   if (result.type !== "cancel") {
+      //     const fileData = {
+      //       uri: result.uri,
+      //       name: result.name,
+      //       type: "jpg/jpeg/png",
+      //     };
+      //     console.log(fileData);
+      //     setImage(fileData);
+      //   }
+      // });
     } catch (error) {
       console.log(error);
     }
@@ -139,7 +145,7 @@ const HomeScreen = (props) => {
     <View style={styles.container}>
       {user ? (
         <>
-          {user.phone_verified ? null : (
+          {user.phone_verified === true ? null : (
             <Button
               buttonStyle={{ backgroundColor: "red" }}
               title={"Phone Verificaion Unsuccessful! Click Here"}

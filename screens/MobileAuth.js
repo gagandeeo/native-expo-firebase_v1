@@ -1,7 +1,7 @@
 import * as React from "react";
-import { Text, View, TextInput, StyleSheet } from "react-native";
+import { Text, View, StyleSheet } from "react-native";
 import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
-import * as firebase from "firebase";
+import firebase from "firebase";
 import { db } from "../config/Firebase";
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
@@ -18,8 +18,8 @@ const MobileAuth = (props) => {
 
   const getVerifCode = async () => {
     try {
-      const phoneProvider = new firebase.auth.PhoneAuthProvider();
-      const verificationId = await phoneProvider.verifyPhoneNumber(
+      const user = firebase.auth().currentUser;
+      const verificationId = await user.linkWithPhoneNumber(
         phoneNumber,
         recaptchaVerifier.current
       );
@@ -33,23 +33,18 @@ const MobileAuth = (props) => {
 
   const confirmCode = async () => {
     try {
-      const credential = firebase.auth.PhoneAuthProvider.credential(
-        verificationId,
-        verificationCode
-      );
-      await firebase.auth().signInWithCredential(credential);
+      await verificationId.confirm(verificationCode);
       db.collection("users")
         .doc(props.user.user.uid)
         .update({ phone_verified: true });
-
       props.navigation.navigate("HomeScreen");
     } catch (err) {
+      alert(err);
       db.collection("users")
         .doc(props.user.user.uid)
         .update({ phone_verified: "pending" });
-
       props.navigation.navigate("HomeScreen");
-      alert("Try later");
+      // alert("Try later");
     }
   };
 
@@ -61,6 +56,7 @@ const MobileAuth = (props) => {
         ref={recaptchaVerifier}
         firebaseConfig={firebaseConfig}
       />
+
       <Text style={{ marginTop: 40 }}>Enter phone number</Text>
       <Input
         style={{ marginVertical: 10, fontSize: 17 }}
