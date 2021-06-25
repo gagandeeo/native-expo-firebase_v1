@@ -12,8 +12,8 @@ export default function App() {
     <Provider store={store}>
       <View style={styles.container}>
         <SwitchNavigator />
-        {/* <HomeScreen /> */}
-        {/* <MobileAuth /> */}
+        {/* <HomeScreen />
+        <MobileAuth /> */}
       </View>
     </Provider>
   );

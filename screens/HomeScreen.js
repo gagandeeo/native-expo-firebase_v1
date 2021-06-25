@@ -242,7 +242,10 @@ const HomeScreen = (props) => {
           <Button title="Logout" onPress={handleSignOut} />
         </>
       ) : (
-        <ActivityIndicator size="small" color="#0000ff" />
+        <>
+          <ActivityIndicator size="small" color="#0000ff" />
+          <Button title="Logout" onPress={handleSignOut} />
+        </>
       )}
     </View>
   );
