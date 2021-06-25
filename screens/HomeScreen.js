@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
 import Firebase, { db } from "../config/Firebase";
 import { connect } from "react-redux";
 import { getUser, logout } from "../redux/actions/users";
@@ -66,16 +66,20 @@ const HomeScreen = (props) => {
     console.log(data);
   };
   const sendImage = async () => {
-    // const file = await FileSystem.readAsStringAsync(document.uri, {
-    //   encoding: FileSystem.EncodingType.Base64,
-    // });
-    const ref = firebase.storage().ref().child("qsome-child");
+    const file = await FileSystem.readAsStringAsync(image.uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const ref = firebase.storage().ref().child(`userDocs/${user.uid}`);
 
+    const snapshot = await ref.putString(file.split(",")[1], "base64");
+
+    const remoteURL = await snapshot.ref.getDownloadURL();
+    console.log(remoteURL);
     // [START storage_upload_blob]
     // 'file' comes from the Blob or File API
-    ref.put(document).then((snapshot) => {
-      console.log("Uploaded a blob or file!");
-    });
+    // ref.put(document).then((snapshot) => {
+    //   console.log("Uploaded a blob or file!");
+    // });
     // db.collection("userDocs").doc("uiid").set({
     //   file: file,
     // });
@@ -167,13 +171,15 @@ const HomeScreen = (props) => {
           <Button buttonStyle={{ margin: 20 }} title="Zip" onPress={makeZips} />
           <Button
             buttonStyle={{ margin: 20 }}
-            title="Info"
+            title="Send"
             onPress={sendImage}
           />
 
           <Button title="Logout" onPress={handleSignOut} />
         </>
-      ) : null}
+      ) : (
+        <ActivityIndicator size="small" color="#0000ff" />
+      )}
     </View>
   );
 };
